@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payday | 급여업무대행 도입 온보딩 포털</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='9' y='9' width='14' height='14' rx='4' fill='%237c3aed' transform='rotate(45 16 16)'/%3E%3C/svg%3E">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Pretendard', 'Noto Sans KR', 'system-ui', 'sans-serif'] },
+        colors: {
+          brand: { 50:'#eef2ff',100:'#e0e7ff',500:'#6366f1',600:'#4f46e5',700:'#4338ca' }
+        },
+        boxShadow: {
+          card: '0 1px 3px rgba(0,0,0,0.05), 0 10px 25px -8px rgba(79,70,229,0.12)',
+          soft: '0 4px 20px -4px rgba(15,23,42,0.08)'
+        }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" onload="this.rel='stylesheet'">
+<style>
+  .dropzone.dragover { border-color:#4f46e5; background:#eef2ff; transform:scale(1.01); }
+  .dropzone { transition: all .15s ease; }
+  .fade-in { animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from {opacity:0; transform:translateY(6px);} to {opacity:1; transform:none;} }
+  .toast-enter { animation: toastIn .3s cubic-bezier(.21,1.02,.73,1); }
+  @keyframes toastIn { from {opacity:0; transform:translateX(30px);} to {opacity:1; transform:none;} }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:8px; }
+  .progress-bar-fill { transition: width .6s cubic-bezier(.4,0,.2,1); }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+<!-- ===================== 헤더 ===================== -->
+<header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-40">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3 cursor-pointer select-none" onclick="goHome()">
+      <!-- Payday SINCE 1996 로고 (CSS 재현) -->
+      <div class="leading-none">
+        <div class="flex items-start">
+          <span class="text-[26px] font-extrabold tracking-tight text-slate-900" style="letter-spacing:-0.03em">Payday</span>
+          <span class="inline-block w-2.5 h-2.5 rounded-[3px] bg-violet-600 mt-[5px] ml-1" style="transform:rotate(45deg)"></span>
+        </div>
+        <p class="text-[9px] font-bold tracking-[0.3em] text-slate-800 mt-1">SINCE 1996</p>
+      </div>
+      <div class="hidden sm:block border-l border-slate-200 pl-3 ml-1">
+        <h1 class="font-bold text-sm leading-tight text-brand-600">도입 온보딩 포털</h1>
+        <p class="text-[11px] text-slate-400 mt-0.5">급여업무대행 도입요청자료 취합 시스템 (기존법인)</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="bellBtn" onclick="toggleNotifPanel()" class="relative hidden p-2 rounded-lg hover:bg-slate-100 transition" title="알림">
+        <span class="text-xl">🔔</span>
+        <span id="bellBadge" class="hidden absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center"></span>
+      </button>
+      <button id="modeBtn" onclick="onModeBtn()"
+        class="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 transition shadow-soft">
+        🔐 관리자 모드
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- 알림 패널 -->
+<div id="notifPanel" class="hidden fixed top-16 right-4 w-96 max-w-[92vw] bg-white rounded-2xl shadow-card border border-slate-200 z-50 fade-in overflow-hidden">
+  <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+    <h3 class="font-bold text-sm">🔔 실시간 알림</h3>
+    <button onclick="markAllRead()" class="text-xs text-brand-600 hover:underline font-medium">모두 읽음</button>
+  </div>
+  <div id="notifList" class="max-h-80 overflow-y-auto divide-y divide-slate-50"></div>
+</div>
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
+  <!-- ===================== 고객사 선택(랜딩) 화면 ===================== -->
+  <section id="landingView" class="hidden fade-in">
+    <div class="max-w-md mx-auto mt-10 bg-white rounded-2xl shadow-card border border-slate-100 p-8 text-center">
+      <div class="text-5xl mb-4">🏢</div>
+      <h2 class="text-xl font-bold mb-2">고객사 온보딩 접속</h2>
+      <p class="text-sm text-slate-500 mb-6">영업 담당자로부터 전달받은 <b>고유 접속 코드</b>를 입력하시거나, 전달받은 링크로 직접 접속해 주세요.</p>
+      <div class="flex gap-2">
+        <input id="accessCodeInput" type="text" placeholder="예: HX7K2P" maxlength="10"
+          class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-center font-mono font-bold tracking-widest uppercase"
+          onkeydown="if(event.key==='Enter')enterByCode()">
+        <button onclick="enterByCode()" class="px-5 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-soft">입장</button>
+      </div>
+      <p id="codeError" class="hidden text-rose-500 text-xs mt-3 font-medium">⚠️ 유효하지 않은 접속 코드입니다.</p>
+      <div class="mt-8 pt-6 border-t border-slate-100 text-left">
+        <p class="text-xs font-semibold text-slate-400 mb-2">데모용 빠른 접속</p>
+        <div id="demoCompanyList" class="space-y-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 고객용 화면 (Client View) ===================== -->
+  <section id="clientView" class="hidden fade-in">
+    <!-- 상단 인사 + 진척도 -->
+    <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6 sm:p-8 mb-6">
+      <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div>
+          <p class="text-sm text-brand-600 font-semibold mb-1">👋 환영합니다</p>
+          <h2 class="text-2xl font-bold"><span id="clientCompanyName"></span> <span class="text-slate-400 font-medium text-lg">도입자료 제출 현황</span></h2>
+          <p class="text-sm text-slate-500 mt-1">담당자: <span id="clientManagerName" class="font-medium text-slate-700"></span> · 접속코드 <span id="clientCode" class="font-mono font-bold text-brand-600"></span></p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-slate-400 mb-1">전체 진척도 (7개 항목)</p>
+          <p class="text-3xl font-extrabold text-brand-600"><span id="progressPercent">0</span>%</p>
+        </div>
+      </div>
+      <div class="w-full h-4 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBarFill" class="progress-bar-fill h-full rounded-full bg-gradient-to-r from-brand-500 to-violet-500" style="width:0%"></div>
+      </div>
+      <div class="flex justify-between mt-2 text-[11px] text-slate-400 font-medium">
+        <span>도입 시작</span><span>STEP 1</span><span>STEP 2</span><span>STEP 3</span><span>도입 완료 🎉</span>
+      </div>
+    </div>
+
+    <!-- 공통 안내자료 (도입안내문 · 도입자료목록) -->
+    <div id="globalDocsBanner" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6">
+      <p class="text-sm font-bold text-amber-800 mb-1">📌 도입 안내 자료 <span class="font-medium text-amber-600">— 자료 작성 전 반드시 확인해 주세요 (도입안내문 필독)</span></p>
+      <div id="globalDocsList" class="flex flex-wrap gap-2 mt-2"></div>
+    </div>
+
+    <!-- 타임라인 -->
+    <div class="hidden sm:flex items-center justify-between mb-8 px-4" id="timelineBar"></div>
+
+    <!-- 단계별 카드 -->
+    <div id="stepCards" class="space-y-8"></div>
+
+    <!-- 완료 배너 -->
+    <div id="completeBanner" class="hidden mt-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-8 text-white text-center shadow-card">
+      <div class="text-4xl mb-2">🎉</div>
+      <h3 class="text-xl font-bold mb-1">모든 도입요청자료 제출이 완료되었습니다!</h3>
+      <p class="text-emerald-50 text-sm">담당 컨설턴트가 자료 검토 후 1영업일 내 연락드릴 예정입니다. 감사합니다.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 관리자용 화면 (Admin View) ===================== -->
+  <section id="adminView" class="hidden fade-in">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-2xl font-bold">📊 관리자 대시보드</h2>
+        <p class="text-sm text-slate-500 mt-1">고객사별 도입자료 제출 현황을 실시간으로 모니터링합니다.</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="openNewCompanyModal()" class="px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition shadow-soft">
+          ➕ 신규 고객사 등록
+        </button>
+      </div>
+    </div>
+
+    <!-- 관리자 탭 -->
+    <div class="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1 w-fit">
+      <button id="tabBtn_companies" onclick="switchAdminTab('companies')" class="px-4 py-2 rounded-lg text-sm font-semibold transition">🏢 고객사 현황</button>
+      <button id="tabBtn_templates" onclick="switchAdminTab('templates')" class="px-4 py-2 rounded-lg text-sm font-semibold transition">📑 서식 관리</button>
+    </div>
+
+    <!-- ───── 탭 1: 고객사 현황 ───── -->
+    <div id="adminTab_companies">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="statCards"></div>
+
+      <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-4 mb-6 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[220px]">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          <input id="adminSearch" oninput="renderAdmin()" type="text" placeholder="고객사명, 담당자, 회사아이디, 접속코드 검색…"
+            class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm">
+        </div>
+        <select id="adminStepFilter" onchange="renderAdmin()" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-brand-500">
+          <option value="all">전체 단계</option>
+          <option value="1">STEP 1 진행 중 (필수 우선)</option>
+          <option value="2">STEP 2 진행 중</option>
+          <option value="3">STEP 3 진행 중</option>
+          <option value="4">STEP 4 진행 중</option>
+          <option value="done">완료</option>
+        </select>
+        <select id="adminSort" onchange="renderAdmin()" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-brand-500">
+          <option value="recent">최근 업로드순</option>
+          <option value="progress">진척도 높은순</option>
+          <option value="name">고객사명순</option>
+        </select>
+      </div>
+
+      <div id="adminCompanyList" class="space-y-4"></div>
+    </div>
+
+    <!-- ───── 탭 2: 서식 관리 ───── -->
+    <div id="adminTab_templates" class="hidden">
+      <div class="bg-brand-50 border border-brand-100 rounded-2xl p-5 mb-6 text-sm text-brand-800">
+        💡 여기에 등록한 서식 파일은 <b>고객 화면의 각 항목 카드에 [서식 다운로드] 버튼</b>으로 즉시 노출됩니다.
+        실제 사용 중인 양식 파일(인사정보 양식.xlsx, 연봉표.xlsx, 급여대장양식.xlsx 등)을 업로드해 주세요. 파일 교체 시 기존 파일을 삭제 후 새로 업로드하면 됩니다.
+      </div>
+      <div id="templateManager" class="space-y-5"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ===================== 관리자 비밀번호 모달 ===================== -->
+<div id="pwModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-card w-full max-w-sm p-7 fade-in">
+    <div class="text-center mb-5">
+      <div class="text-4xl mb-2">🔐</div>
+      <h3 class="font-bold text-lg">관리자 인증</h3>
+      <p class="text-xs text-slate-400 mt-1">관리자 비밀번호를 입력하세요. (데모: 1234)</p>
+    </div>
+    <input id="pwInput" type="password" placeholder="••••" maxlength="20"
+      class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-center font-bold tracking-widest mb-2"
+      onkeydown="if(event.key==='Enter')checkPassword()">
+    <p id="pwError" class="hidden text-rose-500 text-xs text-center mb-2 font-medium">❌ 비밀번호가 일치하지 않습니다.</p>
+    <div class="flex gap-2 mt-3">
+      <button onclick="closePwModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">취소</button>
+      <button onclick="checkPassword()" class="flex-1 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 신규 고객사 모달 ===================== -->
+<div id="newCompanyModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-card w-full max-w-md p-7 fade-in">
+    <h3 class="font-bold text-lg mb-1">➕ 신규 고객사 등록</h3>
+    <p class="text-xs text-slate-400 mb-5">등록 시 고객사 전용 <b>고유 업로드 링크(접속 코드)</b>가 자동 생성됩니다.</p>
+    <label class="block text-xs font-semibold text-slate-500 mb-1">고객사명 *</label>
+    <input id="ncName" type="text" placeholder="예: (주)한빛테크" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none text-sm mb-4">
+    <label class="block text-xs font-semibold text-slate-500 mb-1">고객사 담당자명</label>
+    <input id="ncManager" type="text" placeholder="예: 김민수 과장" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none text-sm mb-4">
+    <label class="block text-xs font-semibold text-slate-500 mb-1">영업 담당자 (알림 수신)</label>
+    <input id="ncSales" type="text" placeholder="예: 박지훈 매니저" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none text-sm mb-5">
+    <div class="flex gap-2">
+      <button onclick="closeNewCompanyModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">취소</button>
+      <button onclick="createCompany()" class="flex-1 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition">생성하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 컨테이너 -->
+<div id="toastBox" class="fixed bottom-5 right-5 z-[60] space-y-2 w-80 max-w-[90vw]"></div>
+
+<script>
+/* =========================================================
+   월급날 급여업무대행 도입 온보딩 포털 — 단일 파일 데모
+   데이터: LocalStorage (새로고침에도 유지)
+   ========================================================= */
+
+const LS_KEY = 'wolgeupnal_onboarding_v2';
+const ADMIN_PW = '1234';
+const MAX_FILE_MB = 2; // LocalStorage 용량 보호 (데모)
+
+/* ---------- 단계(STEP) 정의 ---------- */
+const STEPS = [
+  { no:1, emoji:'🚨', title:'필수 우선 자료',   subtitle:'가장 먼저 제출해 주세요' },
+  { no:2, emoji:'🗂️', title:'인사·연봉 정보',  subtitle:'첨부 서식으로 작성' },
+  { no:3, emoji:'💰', title:'급여·세무 자료',  subtitle:'급여대장 세팅 및 급여분석 용도' },
+  { no:4, emoji:'🏥', title:'4대보험 EDI',     subtitle:'건강보험 EDI 인증서' },
+];
+
+/* ---------- 도입요청자료 7개 항목 정의 (도입자료목록 기준) ---------- */
+const ITEMS = [
+  { key:'biz', no:1, step:1, type:'file', emoji:'📜',
+    title:'사업자등록증 사본',
+    desc:'최신 사업자등록증 사본을 업로드해 주세요.',
+    accept:['pdf','jpg','jpeg','png'] },
+
+  { key:'companyId', no:2, step:1, type:'input', emoji:'🆔',
+    title:'회사아이디',
+    desc:'임직원이 공용으로 사용하는 회사아이디입니다. 영문 12자 이내로 직접 입력 후 중복확인을 진행해 주세요.' },
+
+  { key:'hr', no:3, step:2, type:'file', emoji:'👥',
+    title:'인사정보',
+    desc:'첨부 서식으로 작성해 주세요. (2026년 재직자 기준, 사번 입력 필수)',
+    accept:['xlsx','xls'], tplKey:'hr' },
+
+  { key:'salaryTable', no:4, step:2, type:'file', emoji:'📋',
+    title:'연봉표',
+    desc:'첨부 서식으로 작성해 주세요. 연봉표상의 수당항목은 내부지급항목으로 수정 후 작성하시면 됩니다.',
+    accept:['xlsx','xls'], tplKey:'salaryTable' },
+
+  { key:'payroll', no:5, step:3, type:'file', emoji:'💵',
+    title:'급여대장 (2025년 11월)',
+    desc:'2025년 11월 급여대장을 엑셀파일로 전달해 주세요. (첨부 서식 참고) 급여대장 세팅 및 급여분석 용도로 활용됩니다.',
+    notice:'※ 이전년도(2025년) 급여데이터 업로드 필요 시 월별대장 전달 필요 — 대장 1개당 월 50,000원(부가세별도) 비용 발생',
+    accept:['xlsx','xls'], tplKey:'payroll' },
+
+  { key:'tax', no:6, step:3, type:'file', emoji:'🧾',
+    title:'원천세 신고자료',
+    desc:'주민세종업원분 신고결과서 (직전 1년 신고결과서 전체)를 업로드해 주세요.',
+    accept:['pdf','xlsx','xls','jpg','jpeg','png','zip'] },
+
+  { key:'edi', no:7, step:4, type:'edi', emoji:'🏥',
+    title:'건강보험EDI 로그인 정보 및 인증서',
+    desc:'당사에서는 은행용(또는 범용) 인증서가 아닌 건강보험 EDI에서만 사용 가능한 업무제한용 인증서로 업무를 처리합니다. 발급방법은 첨부자료 [건강보험EDI인증서]를 참고해 주세요.',
+    accept:['pfx','p12','zip','pdf','jpg','jpeg','png'], tplKey:'edi' },
+];
+
+/* ---------- 서식(템플릿) 그룹 정의 — 관리자단에서 파일 등록/교체 ---------- */
+const TPL_GROUPS = [
+  { key:'common', title:'📌 공통 안내자료 (도입안내문 · 도입자료목록)',
+    hint:'★ 월급날 급여업무대행 도입자료목록(2026).pdf, 도입안내문 등 — 고객 화면 상단 배너에 노출됩니다.' },
+  { key:'hr', title:'👥 3. 인사정보 서식',
+    hint:'권장: 1. 인사정보 양식.xlsx' },
+  { key:'salaryTable', title:'📋 4. 연봉표 서식',
+    hint:'권장: 2. 연봉표.xlsx' },
+  { key:'payroll', title:'💵 5. 급여대장 서식 및 샘플',
+    hint:'권장: 3. 급여대장양식.xlsx · 4. 퇴직금정산.xlsx · 5-1. 사업소득sample.xlsx · 5-2. 기타소득sample.xlsx · 5-3. 이자배당sample.xlsx · 5-4. 일용직sample.xlsx' },
+  { key:'edi', title:'🏥 7. 건강보험EDI 인증서 참고자료',
+    hint:'권장: 1. 건강보험EDI용 인증서 발급방법 안내.pdf · 2. 공인인증서신청서(법인,개인-사업자용).pdf/hwp · 3. 인증서내보내기절차.pdf · 4대보험 성립신고 필요서류 및 기재사항.xlsx' },
+];
+
+/* ---------- 회사아이디 중복체크
+   TODO: 실제 운영 시 내부 시스템(기존 회사아이디 DB) API와 연동 예정.
+   현재는 ①예약어 ②포털 내 타 고객사가 확정한 아이디 기준으로 검사. ---------- */
+const RESERVED_IDS = ['admin','test', 'wolgeupnal', 'payroll', 'master'];
+function isIdTaken(id, excludeCompanyId){
+  const low = id.toLowerCase();
+  if (RESERVED_IDS.includes(low)) return true;
+  return state.companies.some(c => c.id !== excludeCompanyId && (c.companyLoginId||'').toLowerCase() === low);
+}
+function validateCompanyId(id){
+  if (!id) return '아이디를 입력해 주세요.';
+  if (id.length > 12) return '영문 12자 이내로 입력해 주세요.';
+  if (!/^[A-Za-z][A-Za-z0-9]*$/.test(id)) return '영문으로 시작하고 영문/숫자만 사용 가능합니다.';
+  return null;
+}
+
+/* ---------- 상태 ---------- */
+let state = null;
+let currentClientId = null;
+let isAdmin = false;
+let adminTab = 'companies';
+
+function defaultState() {
+  return {
+    companies: [
+      { id: genId(), code: 'DEMO01', name: '(주)데모컴퍼니', manager: '김데모 과장', sales: '박지훈 매니저',
+        createdAt: Date.now(), files: [], rejected: [],
+        companyLoginId: '', ediLogin: { id:'', pw:'' } }
+    ],
+    notifications: [],
+    templates: {} // { groupKey: [{id,name,size,time,dataUrl}] }
+  };
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    state = raw ? JSON.parse(raw) : defaultState();
+  } catch(e) { state = defaultState(); }
+  if (!state.companies || !state.companies.length) state = defaultState();
+  if (!state.templates) state.templates = {};
+  state.companies.forEach(c=>{
+    if (c.companyLoginId === undefined) c.companyLoginId = '';
+    if (!c.ediLogin) c.ediLogin = { id:'', pw:'' };
+    if (!c.rejected) c.rejected = [];
+  });
+}
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  catch(e) { toast('⚠️ 저장 공간 부족', '브라우저 저장 용량(LocalStorage) 한도를 초과했습니다. 데모에서는 작은 파일을 사용해 주세요.', 'error'); }
+}
+function genId() { return 'c_' + Math.random().toString(36).slice(2,10); }
+function genCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let c=''; for(let i=0;i<6;i++) c += chars[Math.floor(Math.random()*chars.length)];
+  return state.companies.some(co=>co.code===c) ? genCode() : c;
+}
+function fmtSize(b){ return b>1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(0)+' KB'; }
+function fmtTime(t){ const d=new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function extOf(name){ const i=name.lastIndexOf('.'); return i<0?'':name.slice(i+1).toLowerCase(); }
+
+/* ---------- 완료/진척도 로직 ---------- */
+function itemFiles(co, key){ return co.files.filter(f=>f.itemKey===key); }
+function itemDone(co, item){
+  if (item.type==='input') return !!co.companyLoginId;
+  return itemFiles(co, item.key).length > 0;
+}
+function stepItems(stepNo){ return ITEMS.filter(i=>i.step===stepNo); }
+function stepDone(co, stepNo){ return stepItems(stepNo).every(i=>itemDone(co,i)); }
+function stepUnlocked(co, stepNo){ return stepNo===1 || stepDone(co, stepNo-1); }
+function currentStep(co){
+  for (const s of STEPS) if (!stepDone(co, s.no)) return s.no;
+  return 5;
+}
+function progressOf(co){
+  return Math.round(ITEMS.filter(i=>itemDone(co,i)).length / ITEMS.length * 100);
+}
+
+/* =========================================================
+   화면 전환
+   ========================================================= */
+function showView(name){
+  ['landingView','clientView','adminView'].forEach(v=>document.getElementById(v).classList.add('hidden'));
+  document.getElementById(name).classList.remove('hidden');
+  document.getElementById('bellBtn').classList.toggle('hidden', name!=='adminView');
+  document.getElementById('notifPanel').classList.add('hidden');
+  const btn = document.getElementById('modeBtn');
+  if (name==='adminView') { btn.innerHTML='👤 고객 화면으로'; btn.className='px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition shadow-soft'; }
+  else { btn.innerHTML='🔐 관리자 모드'; btn.className='px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 transition shadow-soft'; }
+}
+function goHome(){
+  isAdmin=false; currentClientId=null;
+  history.replaceState(null,'',location.pathname);
+  renderLanding(); showView('landingView');
+}
+function onModeBtn(){
+  if (isAdmin) { isAdmin=false; goHome(); return; }
+  document.getElementById('pwModal').classList.remove('hidden');
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwError').classList.add('hidden');
+  setTimeout(()=>document.getElementById('pwInput').focus(), 50);
+}
+function closePwModal(){ document.getElementById('pwModal').classList.add('hidden'); }
+function checkPassword(){
+  if (document.getElementById('pwInput').value === ADMIN_PW) {
+    closePwModal(); isAdmin=true;
+    switchAdminTab('companies'); showView('adminView'); updateBell();
+    toast('🔓 관리자 모드', '관리자 대시보드에 접속했습니다.', 'success');
+  } else {
+    document.getElementById('pwError').classList.remove('hidden');
+    document.getElementById('pwInput').value='';
+  }
+}
+function switchAdminTab(tab){
+  adminTab = tab;
+  document.getElementById('adminTab_companies').classList.toggle('hidden', tab!=='companies');
+  document.getElementById('adminTab_templates').classList.toggle('hidden', tab!=='templates');
+  const on = 'px-4 py-2 rounded-lg text-sm font-semibold transition bg-white shadow-soft text-brand-700';
+  const off = 'px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-500 hover:text-slate-700';
+  document.getElementById('tabBtn_companies').className = tab==='companies'?on:off;
+  document.getElementById('tabBtn_templates').className = tab==='templates'?on:off;
+  if (tab==='companies') renderAdmin(); else renderTemplateManager();
+}
+
+/* =========================================================
+   랜딩
+   ========================================================= */
+function renderLanding(){
+  document.getElementById('demoCompanyList').innerHTML = state.companies.map(co=>`
+    <button onclick="enterClient('${co.id}')" class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-brand-50 hover:border-brand-200 transition text-sm">
+      <span class="font-medium">🏢 ${esc(co.name)}</span>
+      <span class="font-mono text-xs font-bold text-brand-600">${co.code}</span>
+    </button>`).join('');
+}
+function enterByCode(){
+  const code = document.getElementById('accessCodeInput').value.trim().toUpperCase();
+  const co = state.companies.find(c=>c.code===code);
+  if (!co) { document.getElementById('codeError').classList.remove('hidden'); return; }
+  enterClient(co.id);
+}
+function enterClient(id){
+  currentClientId = id; isAdmin=false;
+  const co = state.companies.find(c=>c.id===id);
+  history.replaceState(null,'', location.pathname + '?client=' + co.code);
+  renderClient(); showView('clientView');
+}
+
+/* =========================================================
+   고객용 화면 렌더링
+   ========================================================= */
+function tplChips(groupKey){
+  const tpls = state.templates[groupKey] || [];
+  if (!tpls.length) return '';
+  return `<div class="flex flex-wrap gap-2 mt-3">
+    ${tpls.map(t=>`
+      <a href="${t.dataUrl}" download="${esc(t.name)}"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold hover:bg-brand-100 transition">
+        📎 ${esc(t.name)} <span class="text-brand-400">⬇</span>
+      </a>`).join('')}
+  </div>`;
+}
+
+function renderClient(){
+  const co = state.companies.find(c=>c.id===currentClientId);
+  if (!co) { goHome(); return; }
+  const pct = progressOf(co);
+  document.getElementById('clientCompanyName').textContent = co.name;
+  document.getElementById('clientManagerName').textContent = co.manager || '-';
+  document.getElementById('clientCode').textContent = co.code;
+  document.getElementById('progressPercent').textContent = pct;
+  document.getElementById('progressBarFill').style.width = pct + '%';
+  document.getElementById('completeBanner').classList.toggle('hidden', pct < 100);
+
+  // 공통 안내자료 배너
+  const commons = state.templates['common'] || [];
+  document.getElementById('globalDocsBanner').classList.toggle('hidden', !commons.length);
+  document.getElementById('globalDocsList').innerHTML = commons.map(t=>`
+    <a href="${t.dataUrl}" download="${esc(t.name)}"
+      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-amber-200 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition shadow-soft">
+      📄 ${esc(t.name)} <span>⬇</span>
+    </a>`).join('');
+
+  // 타임라인
+  document.getElementById('timelineBar').innerHTML = STEPS.map((s,i)=>{
+    const done = stepDone(co,s.no), unlocked = stepUnlocked(co,s.no);
+    const circle = done ? 'bg-emerald-500 text-white shadow-soft'
+      : unlocked ? 'bg-brand-600 text-white shadow-soft ring-4 ring-brand-100'
+      : 'bg-slate-200 text-slate-400';
+    const line = i<STEPS.length-1
+      ? `<div class="flex-1 h-1 mx-2 rounded ${done?'bg-emerald-400':'bg-slate-200'}"></div>` : '';
+    return `
+      <div class="flex flex-col items-center">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold ${circle}">${done?'✓':s.no}</div>
+        <span class="mt-2 text-[11px] font-semibold ${unlocked?'text-slate-700':'text-slate-300'}">${s.title}</span>
+      </div>${line}`;
+  }).join('');
+
+  // 단계별 카드
+  document.getElementById('stepCards').innerHTML = STEPS.map(s=>{
+    const unlocked = stepUnlocked(co, s.no);
+    const done = stepDone(co, s.no);
+    const items = stepItems(s.no);
+    const badge = done
+      ? '<span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold">✅ 단계 완료</span>'
+      : unlocked ? '<span class="px-2.5 py-1 rounded-full bg-brand-50 text-brand-600 text-xs font-bold">📤 진행 중</span>'
+      : '<span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-400 text-xs font-bold">🔒 잠김</span>';
+
+    const body = unlocked
+      ? items.map(it=>renderItemCard(co, it)).join('')
+      : `<div class="rounded-xl bg-slate-50 border border-slate-100 p-5 text-center">
+           <p class="text-sm text-slate-400 font-medium">🔒 STEP ${s.no-1}의 모든 항목을 완료하면 이 단계가 잠금 해제됩니다.</p>
+         </div>`;
+
+    return `
+    <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6 ${unlocked?'':'opacity-70'}">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl ${unlocked?'bg-brand-50':'bg-slate-100'} flex items-center justify-center text-xl">${s.emoji}</div>
+          <div>
+            <h3 class="font-bold">STEP ${s.no} · ${s.title}</h3>
+            <p class="text-xs text-slate-400 mt-0.5">${s.subtitle}</p>
+          </div>
+        </div>
+        ${badge}
+      </div>
+      <div class="space-y-4">${body}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 항목 카드 (파일형 / 입력형 / EDI형) ---------- */
+function renderItemCard(co, it){
+  const done = itemDone(co, it);
+  const doneBadge = done
+    ? '<span class="text-xs font-bold text-emerald-600">✅ 완료</span>'
+    : '<span class="text-xs font-bold text-slate-300">⬜ 미제출</span>';
+
+  /* ── 2) 회사아이디: 직접 입력 + 중복확인 ── */
+  if (it.type === 'input') {
+    const confirmed = !!co.companyLoginId;
+    const inner = confirmed ? `
+      <div class="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 mt-3">
+        <div>
+          <p class="text-xs text-emerald-600 font-semibold">등록된 회사아이디</p>
+          <p class="font-mono font-extrabold text-lg text-emerald-700 tracking-wide">${esc(co.companyLoginId)}</p>
+        </div>
+        <button onclick="resetCompanyId('${co.id}')" class="px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">✏️ 변경</button>
+      </div>` : `
+      <div class="mt-3">
+        <div class="flex gap-2">
+          <input id="companyIdInput" type="text" maxlength="12" placeholder="영문 12자 이내 (예: hanbittech)"
+            class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm font-mono"
+            oninput="document.getElementById('idCheckResult').innerHTML=''; idChecked=false;"
+            onkeydown="if(event.key==='Enter')checkCompanyId()">
+          <button onclick="checkCompanyId()" class="px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-brand-700 text-sm font-bold hover:bg-brand-100 transition shrink-0">중복확인</button>
+          <button id="idRegisterBtn" onclick="registerCompanyId()" disabled
+            class="px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 transition shrink-0 disabled:opacity-40 disabled:cursor-not-allowed">등록</button>
+        </div>
+        <p id="idCheckResult" class="text-xs mt-2 font-medium min-h-[16px]"></p>
+        <p class="text-[11px] text-slate-400 mt-1">· 영문으로 시작, 영문/숫자 조합 가능 · 중복확인 통과 후 [등록] 버튼이 활성화됩니다.</p>
+      </div>`;
+    return itemShell(it, doneBadge, inner);
+  }
+
+  /* ── 7) EDI: 로그인 정보 입력 + 인증서 업로드 ── */
+  if (it.type === 'edi') {
+    const files = itemFiles(co, it.key);
+    const inner = `
+      <div class="grid sm:grid-cols-2 gap-2 mt-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">건강보험 EDI 아이디</label>
+          <input id="ediIdInput" type="text" value="${esc(co.ediLogin.id||'')}" placeholder="EDI 로그인 아이디"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-brand-500 outline-none text-sm" onchange="saveEdiLogin()">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">건강보험 EDI 비밀번호</label>
+          <input id="ediPwInput" type="password" value="${esc(co.ediLogin.pw||'')}" placeholder="EDI 로그인 비밀번호"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-brand-500 outline-none text-sm" onchange="saveEdiLogin()">
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-1.5">⚠️ 데모 환경에서는 브라우저(LocalStorage)에 평문 저장됩니다. 실서비스 전환 시 암호화 저장이 필요합니다.</p>
+      ${fileListHtml(co, it)}
+      ${dropzoneHtml(it, '업무제한용 인증서 파일 업로드 (pfx, p12, zip 등)')}`;
+    return itemShell(it, doneBadge, inner);
+  }
+
+  /* ── 일반 파일 업로드 항목 ── */
+  const inner = `${fileListHtml(co, it)}${dropzoneHtml(it)}`;
+  return itemShell(it, doneBadge, inner);
+}
+
+function itemShell(it, doneBadge, inner){
+  return `
+  <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+    <div class="flex items-start justify-between gap-2">
+      <div class="flex items-start gap-2.5">
+        <span class="text-lg mt-0.5">${it.emoji}</span>
+        <div>
+          <h4 class="font-bold text-sm">${it.no}. ${it.title}</h4>
+          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">${it.desc}</p>
+          ${it.notice?`<p class="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 mt-2 leading-relaxed">${it.notice}</p>`:''}
+        </div>
+      </div>
+      <div class="shrink-0">${doneBadge}</div>
+    </div>
+    ${it.tplKey ? tplChips(it.tplKey) : ''}
+    ${inner}
+  </div>`;
+}
+
+function fileListHtml(co, it){
+  const files = itemFiles(co, it.key);
+  if (!files.length) return '';
+  return `<div class="space-y-1.5 mt-3">${files.map(f=>`
+    <div class="flex items-center justify-between px-3 py-2 bg-white border border-slate-100 rounded-lg text-sm fade-in">
+      <div class="flex items-center gap-2 min-w-0">
+        <span>📄</span>
+        <span class="truncate font-medium">${esc(f.name)}</span>
+        <span class="text-xs text-slate-400 shrink-0">${fmtSize(f.size)} · ${fmtTime(f.time)}</span>
+      </div>
+      <button onclick="deleteFile('${co.id}','${f.id}')" class="text-slate-300 hover:text-rose-500 transition text-xs shrink-0 ml-2">✕ 삭제</button>
+    </div>`).join('')}</div>`;
+}
+
+function dropzoneHtml(it, labelOverride){
+  return `
+  <div class="dropzone border-2 border-dashed border-slate-200 rounded-xl p-5 text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50/40 mt-3 bg-white"
+    ondragover="event.preventDefault(); this.classList.add('dragover')"
+    ondragleave="this.classList.remove('dragover')"
+    ondrop="onDrop(event, '${it.key}')"
+    onclick="document.getElementById('fileInput_${it.key}').click()">
+    <div class="text-2xl mb-1">📁</div>
+    <p class="text-sm font-semibold text-slate-600">${labelOverride||'파일을 끌어다 놓거나 클릭하여 업로드'}</p>
+    <p class="text-xs text-slate-400 mt-1">허용 양식: ${it.accept.map(e=>'.'+e).join(' ')} · 최대 ${MAX_FILE_MB}MB</p>
+    <input type="file" id="fileInput_${it.key}" class="hidden" multiple
+      accept="${it.accept.map(e=>'.'+e).join(',')}"
+      onchange="onPick(event, '${it.key}')">
+  </div>`;
+}
+
+/* =========================================================
+   회사아이디 — 입력 / 중복확인 / 등록
+   ========================================================= */
+let idChecked = false;
+function checkCompanyId(){
+  const co = state.companies.find(c=>c.id===currentClientId);
+  const input = document.getElementById('companyIdInput');
+  const result = document.getElementById('idCheckResult');
+  const btn = document.getElementById('idRegisterBtn');
+  const val = input.value.trim();
+  const err = validateCompanyId(val);
+  if (err) { result.innerHTML = `<span class="text-rose-500">❌ ${err}</span>`; btn.disabled = true; idChecked=false; return; }
+  if (isIdTaken(val, co.id)) {
+    result.innerHTML = `<span class="text-rose-500">❌ "${esc(val)}"은(는) 이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.</span>`;
+    btn.disabled = true; idChecked=false;
+  } else {
+    result.innerHTML = `<span class="text-emerald-600">✅ "${esc(val)}"은(는) 사용 가능한 아이디입니다. [등록] 버튼을 눌러 확정해 주세요.</span>`;
+    btn.disabled = false; idChecked = true;
+  }
+}
+function registerCompanyId(){
+  if (!idChecked) return;
+  const co = state.companies.find(c=>c.id===currentClientId);
+  const val = document.getElementById('companyIdInput').value.trim();
+  // 등록 직전 재검증 (다른 탭에서 선점되었을 수 있음)
+  if (validateCompanyId(val) || isIdTaken(val, co.id)) { checkCompanyId(); return; }
+  const wasStepDone = stepDone(co, 1);
+  co.companyLoginId = val;
+  pushNotification(co, `🆔 ${co.name}이(가) 회사아이디 [${val}]을(를) 등록했습니다.`);
+  notifyStepProgress(co, wasStepDone, 1);
+  save(); renderClient();
+  toast('✅ 회사아이디 등록 완료', `회사아이디 [${val}]이(가) 등록되었습니다.`, 'success');
+}
+function resetCompanyId(companyId){
+  const co = state.companies.find(c=>c.id===companyId);
+  if (!co) return;
+  if (!confirm(`등록된 회사아이디 [${co.companyLoginId}]를 변경하시겠습니까?\n(STEP 1이 미완료 상태로 돌아가며, 이후 단계 업로드는 유지됩니다)`)) return;
+  co.companyLoginId = '';
+  idChecked = false;
+  save(); renderClient();
+}
+function saveEdiLogin(){
+  const co = state.companies.find(c=>c.id===currentClientId);
+  if (!co) return;
+  co.ediLogin.id = document.getElementById('ediIdInput').value.trim();
+  co.ediLogin.pw = document.getElementById('ediPwInput').value;
+  save();
+  toast('💾 저장됨', 'EDI 로그인 정보가 저장되었습니다.', 'info');
+}
+
+/* =========================================================
+   파일 업로드 / 양식 검증(반려)
+   ========================================================= */
+function onDrop(ev, itemKey){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('dragover');
+  handleFiles(ev.dataTransfer.files, itemKey);
+}
+function onPick(ev, itemKey){
+  handleFiles(ev.target.files, itemKey);
+  ev.target.value = '';
+}
+function handleFiles(fileList, itemKey){
+  const co = state.companies.find(c=>c.id===currentClientId);
+  const it = ITEMS.find(i=>i.key===itemKey);
+  if (!co || !it || !stepUnlocked(co, it.step)) return;
+
+  [...fileList].forEach(file=>{
+    const ext = extOf(file.name);
+    if (!it.accept.includes(ext)) {
+      co.rejected.push({ name:file.name, itemKey, itemTitle:it.title, reason:`허용되지 않는 형식 (.${ext||'없음'})`, time:Date.now() });
+      save();
+      toast('⛔ 파일 반려', `"${file.name}"은(는) [${it.title}] 양식에 맞지 않아 반려되었습니다.\n허용: ${it.accept.map(e=>'.'+e).join(' ')}`, 'error');
+      return;
+    }
+    if (file.size > MAX_FILE_MB*1048576) {
+      co.rejected.push({ name:file.name, itemKey, itemTitle:it.title, reason:`용량 초과 (${fmtSize(file.size)} > ${MAX_FILE_MB}MB)`, time:Date.now() });
+      save();
+      toast('⛔ 파일 반려', `"${file.name}" 용량이 데모 한도(${MAX_FILE_MB}MB)를 초과했습니다.`, 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const wasStepDone = stepDone(co, it.step);
+      co.files.push({
+        id:'f_'+Math.random().toString(36).slice(2,10),
+        itemKey, name:file.name, size:file.size, time:Date.now(), dataUrl:reader.result
+      });
+      pushNotification(co, `📂 ${co.name}이(가) [${it.no}. ${it.title}] 자료 "${file.name}"을(를) 업로드했습니다.`);
+      notifyStepProgress(co, wasStepDone, it.step);
+      save(); renderClient();
+      toast('✅ 업로드 완료', `"${file.name}" 파일이 정상 접수되었습니다.`, 'success');
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function notifyStepProgress(co, wasStepDone, stepNo){
+  if (!wasStepDone && stepDone(co, stepNo)) {
+    if (stepNo < STEPS.length) {
+      pushNotification(co, `🚀 ${co.name} — STEP ${stepNo} 완료, STEP ${stepNo+1} 단계가 잠금 해제되었습니다.`);
+      toast('🔓 단계 잠금 해제!', `STEP ${stepNo+1} [${STEPS[stepNo].title}] 단계가 열렸습니다.`, 'success');
+    }
+    if (progressOf(co) === 100) {
+      pushNotification(co, `🎉 ${co.name} 도입요청자료 제출이 100% 완료되었습니다! (${co.sales||'영업 담당자'}님 확인 요망)`);
+    }
+  }
+}
+function deleteFile(companyId, fileId){
+  const co = state.companies.find(c=>c.id===companyId);
+  if (!co) return;
+  co.files = co.files.filter(f=>f.id!==fileId);
+  save();
+  if (currentClientId===companyId && !document.getElementById('clientView').classList.contains('hidden')) renderClient();
+  if (isAdmin) renderAdmin();
+}
+
+/* =========================================================
+   알림 (영업 담당자 실시간 알림)
+   ========================================================= */
+function pushNotification(co, msg){
+  state.notifications.unshift({ id:'n_'+Math.random().toString(36).slice(2,9), companyId:co.id, msg, time:Date.now(), read:false });
+  if (state.notifications.length > 50) state.notifications.length = 50;
+  updateBell();
+}
+function updateBell(){
+  const unread = state.notifications.filter(n=>!n.read).length;
+  const badge = document.getElementById('bellBadge');
+  badge.classList.toggle('hidden', unread===0);
+  badge.textContent = unread>9 ? '9+' : unread;
+  renderNotifList();
+}
+function renderNotifList(){
+  const box = document.getElementById('notifList');
+  if (!state.notifications.length) {
+    box.innerHTML = '<p class="text-center text-xs text-slate-400 py-8">알림이 없습니다 💤</p>'; return;
+  }
+  box.innerHTML = state.notifications.map(n=>`
+    <div class="px-4 py-3 text-sm ${n.read?'bg-white':'bg-brand-50/60'}">
+      <p class="leading-snug">${esc(n.msg)}</p>
+      <p class="text-[11px] text-slate-400 mt-1">${fmtTime(n.time)}</p>
+    </div>`).join('');
+}
+function toggleNotifPanel(){ document.getElementById('notifPanel').classList.toggle('hidden'); }
+function markAllRead(){ state.notifications.forEach(n=>n.read=true); save(); updateBell(); }
+
+/* =========================================================
+   관리자: 고객사 현황
+   ========================================================= */
+function renderAdmin(){
+  const total = state.companies.length;
+  const done = state.companies.filter(c=>progressOf(c)===100).length;
+  const step1 = state.companies.filter(c=>currentStep(c)===1).length;
+  const totalFiles = state.companies.reduce((a,c)=>a+c.files.length,0);
+  document.getElementById('statCards').innerHTML = [
+    ['🏢','전체 고객사', total+'곳','text-slate-800'],
+    ['🚨','STEP1 (필수자료) 대기', step1+'곳','text-rose-500'],
+    ['🎉','제출 완료', done+'곳','text-emerald-600'],
+    ['📂','총 수집 파일', totalFiles+'개','text-violet-600'],
+  ].map(([e,l,v,c])=>`
+    <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-5">
+      <p class="text-xs text-slate-400 font-semibold mb-1">${e} ${l}</p>
+      <p class="text-2xl font-extrabold ${c}">${v}</p>
+    </div>`).join('');
+
+  const q = (document.getElementById('adminSearch').value||'').trim().toLowerCase();
+  const sf = document.getElementById('adminStepFilter').value;
+  const sort = document.getElementById('adminSort').value;
+
+  let list = state.companies.filter(co=>{
+    const hit = !q || [co.name,co.manager,co.sales,co.code,co.companyLoginId].some(v=>(v||'').toLowerCase().includes(q));
+    const cs = currentStep(co);
+    const sfHit = sf==='all' || (sf==='done' ? cs===5 : cs===Number(sf));
+    return hit && sfHit;
+  });
+  list.sort((a,b)=>{
+    if (sort==='name') return a.name.localeCompare(b.name,'ko');
+    if (sort==='progress') return progressOf(b)-progressOf(a);
+    const la = Math.max(a.createdAt, ...a.files.map(f=>f.time));
+    const lb = Math.max(b.createdAt, ...b.files.map(f=>f.time));
+    return lb-la;
+  });
+
+  const box = document.getElementById('adminCompanyList');
+  if (!list.length) {
+    box.innerHTML = '<div class="bg-white rounded-2xl shadow-card border border-slate-100 p-10 text-center text-slate-400 text-sm">🔍 조건에 맞는 고객사가 없습니다.</div>';
+    return;
+  }
+
+  box.innerHTML = list.map(co=>{
+    const pct = progressOf(co);
+    const cs = currentStep(co);
+    const stepBadge = cs===5
+      ? '<span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold">🎉 제출 완료</span>'
+      : `<span class="px-2.5 py-1 rounded-full bg-brand-50 text-brand-600 text-xs font-bold">🔄 STEP ${cs} 진행 중</span>`;
+    const link = location.origin + location.pathname + '?client=' + co.code;
+
+    // 7개 항목 체크리스트 칩
+    const itemChips = ITEMS.map(it=>{
+      const d = itemDone(co,it);
+      const u = stepUnlocked(co,it.step);
+      const cls = d ? 'bg-emerald-500 text-white' : u ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-400';
+      return `<span class="w-7 h-7 rounded-lg ${cls} flex items-center justify-center text-xs font-bold" title="${it.no}. ${it.title}">${d?'✓':it.no}</span>`;
+    }).join('');
+
+    const idInfo = co.companyLoginId
+      ? `<span class="font-mono font-bold text-emerald-600">${esc(co.companyLoginId)}</span>`
+      : '<span class="text-rose-400 font-semibold">미등록</span>';
+    const ediInfo = (co.ediLogin && co.ediLogin.id)
+      ? `EDI: <span class="font-mono">${esc(co.ediLogin.id)}</span> / ${'•'.repeat(Math.min((co.ediLogin.pw||'').length,8))||'-'}`
+      : 'EDI 로그인 정보 미입력';
+
+    const fileRows = co.files.length ? co.files.slice().sort((a,b)=>b.time-a.time).map(f=>{
+      const it = ITEMS.find(i=>i.key===f.itemKey);
+      return `
+      <div class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg text-sm">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="px-1.5 py-0.5 rounded bg-brand-100 text-brand-700 text-[10px] font-bold shrink-0">${it?it.no+'. '+it.title:f.itemKey}</span>
+          <span class="truncate font-medium">${esc(f.name)}</span>
+          <span class="text-xs text-slate-400 shrink-0">${fmtSize(f.size)} · ${fmtTime(f.time)}</span>
+        </div>
+        <a href="${f.dataUrl}" download="${esc(f.name)}"
+          class="shrink-0 ml-2 px-3 py-1 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition">⬇ 다운로드</a>
+      </div>`;}).join('')
+      : '<p class="text-xs text-slate-400 px-1 py-2">아직 업로드된 파일이 없습니다.</p>';
+
+    const rejRows = co.rejected && co.rejected.length ? `
+      <details class="mt-3">
+        <summary class="text-xs font-semibold text-rose-500 cursor-pointer select-none">⛔ 반려 이력 ${co.rejected.length}건 보기</summary>
+        <div class="mt-2 space-y-1">
+          ${co.rejected.slice().reverse().map(r=>`
+            <div class="px-3 py-1.5 bg-rose-50 rounded-lg text-xs text-rose-600 flex justify-between gap-2">
+              <span class="truncate">📄 ${esc(r.name)} (${esc(r.itemTitle||'')}) — ${esc(r.reason)}</span>
+              <span class="shrink-0 text-rose-400">${fmtTime(r.time)}</span>
+            </div>`).join('')}
+        </div>
+      </details>` : '';
+
+    return `
+    <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="font-bold text-lg">🏢 ${esc(co.name)}</h3>
+            ${stepBadge}
+          </div>
+          <p class="text-xs text-slate-400 mt-1">
+            담당자 ${esc(co.manager||'-')} · 영업 ${esc(co.sales||'-')} ·
+            접속코드 <span class="font-mono font-bold text-brand-600">${co.code}</span> ·
+            회사아이디 ${idInfo} · ${ediInfo}
+          </p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="copyLink('${link}')" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">🔗 업로드 링크 복사</button>
+          <button onclick="enterClient('${co.id}')" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">👤 고객 화면 보기</button>
+          <button onclick="removeCompany('${co.id}')" class="px-3 py-1.5 rounded-lg border border-rose-100 text-xs font-semibold text-rose-500 hover:bg-rose-50 transition">🗑 삭제</button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 mt-4">
+        <div class="flex gap-1.5">${itemChips}</div>
+        <div class="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div class="progress-bar-fill h-full rounded-full ${pct===100?'bg-emerald-500':'bg-gradient-to-r from-brand-500 to-violet-500'}" style="width:${pct}%"></div>
+        </div>
+        <span class="text-sm font-bold ${pct===100?'text-emerald-600':'text-brand-600'} w-12 text-right">${pct}%</span>
+      </div>
+
+      <details class="mt-4" ${co.files.length?'open':''}>
+        <summary class="text-sm font-semibold text-slate-600 cursor-pointer select-none">📂 업로드 파일 목록 (${co.files.length})</summary>
+        <div class="mt-2 space-y-1.5 max-h-56 overflow-y-auto pr-1">${fileRows}</div>
+      </details>
+      ${rejRows}
+    </div>`;
+  }).join('');
+}
+
+function copyLink(link){
+  navigator.clipboard.writeText(link)
+    .then(()=>toast('🔗 링크 복사 완료', '고객사 전용 업로드 링크가 클립보드에 복사되었습니다.', 'success'))
+    .catch(()=>toast('🔗 링크', link, 'info'));
+}
+function removeCompany(id){
+  const co = state.companies.find(c=>c.id===id);
+  if (!co) return;
+  if (!confirm(`'${co.name}' 고객사와 업로드 파일 ${co.files.length}건을 모두 삭제할까요?`)) return;
+  state.companies = state.companies.filter(c=>c.id!==id);
+  state.notifications = state.notifications.filter(n=>n.companyId!==id);
+  save(); renderAdmin(); updateBell();
+  toast('🗑 삭제 완료', `${co.name} 데이터가 삭제되었습니다.`, 'info');
+}
+
+/* =========================================================
+   관리자: 서식 관리 (서식 등록/교체/삭제 → 고객 화면에 즉시 반영)
+   ========================================================= */
+function renderTemplateManager(){
+  document.getElementById('templateManager').innerHTML = TPL_GROUPS.map(g=>{
+    const tpls = state.templates[g.key] || [];
+    const rows = tpls.length ? tpls.map(t=>`
+      <div class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg text-sm">
+        <div class="flex items-center gap-2 min-w-0">
+          <span>📎</span>
+          <span class="truncate font-medium">${esc(t.name)}</span>
+          <span class="text-xs text-slate-400 shrink-0">${fmtSize(t.size)} · ${fmtTime(t.time)}</span>
+        </div>
+        <div class="flex gap-1.5 shrink-0 ml-2">
+          <a href="${t.dataUrl}" download="${esc(t.name)}" class="px-2.5 py-1 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition">⬇</a>
+          <button onclick="deleteTemplate('${g.key}','${t.id}')" class="px-2.5 py-1 rounded-lg border border-rose-100 text-rose-500 text-xs font-semibold hover:bg-rose-50 transition">✕</button>
+        </div>
+      </div>`).join('')
+      : '<p class="text-xs text-slate-400 px-1 py-1">등록된 서식이 없습니다. (고객 화면에 다운로드 버튼이 노출되지 않습니다)</p>';
+
+    return `
+    <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+        <h3 class="font-bold text-sm">${g.title}</h3>
+        <label class="px-3 py-1.5 rounded-lg bg-brand-50 border border-brand-100 text-brand-700 text-xs font-bold cursor-pointer hover:bg-brand-100 transition">
+          📤 서식 업로드
+          <input type="file" class="hidden" multiple onchange="uploadTemplate(event, '${g.key}')">
+        </label>
+      </div>
+      <p class="text-[11px] text-slate-400 mb-3">${esc(g.hint)}</p>
+      <div class="space-y-1.5">${rows}</div>
+    </div>`;
+  }).join('');
+}
+function uploadTemplate(ev, groupKey){
+  [...ev.target.files].forEach(file=>{
+    if (file.size > MAX_FILE_MB*1048576) {
+      toast('⚠️ 용량 초과', `"${file.name}" 용량이 데모 한도(${MAX_FILE_MB}MB)를 초과했습니다.`, 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      if (!state.templates[groupKey]) state.templates[groupKey] = [];
+      // 같은 파일명이 있으면 교체
+      state.templates[groupKey] = state.templates[groupKey].filter(t=>t.name!==file.name);
+      state.templates[groupKey].push({
+        id:'t_'+Math.random().toString(36).slice(2,10),
+        name:file.name, size:file.size, time:Date.now(), dataUrl:reader.result
+      });
+      save(); renderTemplateManager();
+      toast('✅ 서식 등록', `"${file.name}"이(가) 등록되어 고객 화면에 노출됩니다.`, 'success');
+    };
+    reader.readAsDataURL(file);
+  });
+  ev.target.value = '';
+}
+function deleteTemplate(groupKey, tplId){
+  state.templates[groupKey] = (state.templates[groupKey]||[]).filter(t=>t.id!==tplId);
+  save(); renderTemplateManager();
+}
+
+/* ---------- 신규 고객사 ---------- */
+function openNewCompanyModal(){
+  document.getElementById('newCompanyModal').classList.remove('hidden');
+  ['ncName','ncManager','ncSales'].forEach(id=>document.getElementById(id).value='');
+  setTimeout(()=>document.getElementById('ncName').focus(), 50);
+}
+function closeNewCompanyModal(){ document.getElementById('newCompanyModal').classList.add('hidden'); }
+function createCompany(){
+  const name = document.getElementById('ncName').value.trim();
+  if (!name) { toast('⚠️ 입력 필요', '고객사명을 입력해 주세요.', 'error'); return; }
+  const co = {
+    id: genId(), code: genCode(), name,
+    manager: document.getElementById('ncManager').value.trim(),
+    sales: document.getElementById('ncSales').value.trim(),
+    createdAt: Date.now(), files: [], rejected: [],
+    companyLoginId: '', ediLogin: { id:'', pw:'' }
+  };
+  state.companies.push(co);
+  save(); closeNewCompanyModal(); renderAdmin();
+  const link = location.origin + location.pathname + '?client=' + co.code;
+  navigator.clipboard.writeText(link).catch(()=>{});
+  toast('✅ 고객사 등록 완료', `${name} 전용 접속코드 [${co.code}]가 생성되었고, 업로드 링크가 복사되었습니다.`, 'success');
+}
+
+/* =========================================================
+   토스트
+   ========================================================= */
+function toast(title, msg, type='info'){
+  const colors = { success:'border-emerald-200', error:'border-rose-200', info:'border-slate-200' };
+  const el = document.createElement('div');
+  el.className = `toast-enter bg-white rounded-xl shadow-card border ${colors[type]} p-4`;
+  el.innerHTML = `<p class="font-bold text-sm mb-0.5">${esc(title)}</p><p class="text-xs text-slate-500 whitespace-pre-line">${esc(msg)}</p>`;
+  document.getElementById('toastBox').appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 400); }, 4500);
+}
+
+/* =========================================================
+   탭 간 실시간 동기화 (storage 이벤트)
+   ========================================================= */
+window.addEventListener('storage', e=>{
+  if (e.key !== LS_KEY) return;
+  load();
+  if (isAdmin && !document.getElementById('adminView').classList.contains('hidden')) {
+    if (adminTab==='companies') renderAdmin(); else renderTemplateManager();
+    updateBell();
+  }
+  else if (currentClientId && !document.getElementById('clientView').classList.contains('hidden')) renderClient();
+});
+
+/* 알림 패널 외부 클릭 시 닫기 */
+document.addEventListener('click', e=>{
+  const p = document.getElementById('notifPanel');
+  if (!p.classList.contains('hidden') && !p.contains(e.target) && !document.getElementById('bellBtn').contains(e.target)) p.classList.add('hidden');
+});
+
+/* =========================================================
+   초기화: URL ?client=CODE 가 있으면 해당 고객사 바로 입장
+   ========================================================= */
+load();
+(function init(){
+  const code = new URLSearchParams(location.search).get('client');
+  const co = code ? state.companies.find(c=>c.code===code.toUpperCase()) : null;
+  if (co) { currentClientId = co.id; renderClient(); showView('clientView'); }
+  else { renderLanding(); showView('landingView'); }
+  updateBell();
+})();
+</script>
+</body>
+</html>
